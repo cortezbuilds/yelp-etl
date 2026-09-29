@@ -2,6 +2,20 @@
 
 Extract & transform (with compute provided by Spark) the [Yelp Academic Dataset](https://www.yelp.com/dataset/documentation/main) in an [Apache Iceberg](https://iceberg.apache.org/docs/latest/spark-writes/) data lake (with object storage provided by Minio).
 
+## Pipeline at a glance
+
+The five JSON entity files become bronze Iceberg tables, then cleaned silver tables. The silver enrichment step joins each fact with the dimensions it needs:
+
+| Enriched silver table | Cleaned silver inputs |
+| --- | --- |
+| `user_business_review` | `review`, `business`, `user` |
+| `user_business_tip` | `tip`, `business`, `user` |
+| `business_checkin` | `checkin`, `business` |
+
+The three outputs are also silver Iceberg tables (`lake.silver.yelp.*`). The joins in [`enrich.py`](yelp_etl/pipeline/enrich.py) use [Spark's default inner join](https://spark.apache.org/docs/3.5.9/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.join.html), so a fact without a matching dimension row will not appear in its enriched output. See [`run-all-pipelines.sh`](run-all-pipelines.sh) for entity inputs, table names, and job order; [`extract.py`](yelp_etl/pipeline/extract.py) and [`clean.py`](yelp_etl/pipeline/clean.py) implement the first two stages. **Gold is TODO** in the run script. This table describes checked-in code; a current Spark run and populated tables have not been verified here.
+
+<!-- Update this table when run-all-pipelines.sh changes its entities, joins, or outputs, or when the linked pipeline implementations change their behavior. -->
+
 ## Quickstart (MacOS)
 
 *You'll need [Docker Desktop for MacOS.](https://docs.docker.com/desktop/install/mac-install/) installed and running. Have >=4 cores and >=16g RAM available.*
